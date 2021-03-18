@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
+using Azure.Core;
 
 namespace newkvapp
 {
@@ -27,7 +30,21 @@ namespace newkvapp
             }
 
             app.UseRouting();
+            SecretClientOptions options = new SecretClientOptions()
+            {
+                Retry =
+        {
+            Delay= TimeSpan.FromSeconds(2),
+            MaxDelay = TimeSpan.FromSeconds(16),
+            MaxRetries = 5,
+            Mode = RetryMode.Exponential
+         }
+            };
+            var client = new SecretClient(new Uri("https://mykeyvaultshdev.vault.azure.net/"), new DefaultAzureCredential(), options);
 
+            KeyVaultSecret secret = client.GetSecret("DbPassword");
+
+            string secretValue = secret.Value;
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapGet("/", async context =>
